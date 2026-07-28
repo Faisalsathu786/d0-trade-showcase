@@ -1,107 +1,105 @@
 'use client';
 
-import { Share2 } from 'lucide-react';
+import { useState } from 'react';
+import { Download, Share2, Check } from 'lucide-react';
 import type { TradeEntry } from '@/types';
 
-export default function TradeCardClient({ trade }: { trade: TradeEntry }) {
-  const isProfitable = trade.pnlUsd >= 0;
+function cardUrl(trade: TradeEntry, dl = false): string {
   const roi = trade.roi || trade.pnlPercent * trade.leverage;
-  const absPnl = Math.abs(trade.pnlUsd);
-  const pnlFormatted = absPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const entryFormatted = trade.entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  const exitFormatted = trade.exitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-  const sizeFormatted = trade.size.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const pnlPctStr = (trade.pnlPercent || 0).toFixed(1);
-  const roiStr = roi.toFixed(1);
-  const venueName = trade.venue === 'donut-perps' ? 'Donut Perps' : 'HyperLiquid';
-  const ts = trade.timestamp ? new Date(trade.timestamp) : new Date();
-  const dateStr = ts.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const p = new URLSearchParams({
+    asset:    trade.asset,
+    pnl:      String(trade.pnlUsd),
+    roi:      String(roi),
+    side:     trade.side,
+    entry:    String(trade.entryPrice),
+    exit:     String(trade.exitPrice),
+    leverage: String(trade.leverage),
+    venue:    trade.venue,
+    wallet:   trade.walletAddress || '',
+  });
+  if (dl) p.set('dl', '1');
+  return `/api/card?${p}`;
+}
 
-  const shareText = `${isProfitable ? '🚀' : '💀'} ${trade.username || 'Anonymous'} ${trade.side}ed ${trade.asset} on ${venueName} — PnL: ${isProfitable ? '+' : '-'}$${pnlFormatted} (${pnlPctStr}%) ${trade.leverage}x · ROI: ${roiStr}% 🔗 d0.showcase/trade/${trade.id} Powered by @DonutAI 🍩`;
+export default function TradeCardClient({ trade }: { trade: TradeEntry }) {
+  const [copied, setCopied]     = useState(false);
+  const [imgLoaded, setLoaded]  = useState(false);
+
+  const profit  = trade.pnlUsd >= 0;
+  const roi     = trade.roi || trade.pnlPercent * trade.leverage;
+  const imgSrc  = cardUrl(trade);
+  const dlSrc   = cardUrl(trade, true);
+
+  const shareText = `${profit ? '🚀' : '💀'} ${trade.side.toUpperCase()} ${trade.asset} ${trade.leverage}x — ${profit ? '+' : '-'}$${Math.abs(trade.pnlUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })} (${roi.toFixed(1)}%) on ${trade.venue === 'donut-perps' ? 'Donut Perps' : 'HyperLiquid'} Powered by @DonutAI 🍩`;
 
   const handleShare = () => {
-    try {
-      const text = encodeURIComponent(shareText);
-      window.open(`https://twitter.com/intent/tweet?text=${text}&url=https%3A%2F%2Fd0-trade-showcase.vercel.app%2Fcard%2F${trade.id}`, '_blank');
-    } catch {
-      // silently ignore
-    }
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(`https://d0-trade-showcase.vercel.app/card/${trade.id}`)}`,
+      '_blank'
+    );
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(`https://d0-trade-showcase.vercel.app/card/${trade.id}`).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full rounded-2xl border border-border bg-surface overflow-hidden shadow-2xl">
-        <div className={`h-2 ${isProfitable ? 'bg-success' : 'bg-danger'}`} />
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`h-12 w-12 rounded-xl flex items-center justify-center text-xl font-bold ${isProfitable ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'}`}>
-                {trade.side === 'long' ? '↗' : '↘'}
-              </div>
-              <div>
-                <p className="text-lg font-bold">{trade.asset}</p>
-                <p className="text-xs text-text-muted">
-                  {trade.username || 'Anonymous'} · {venueName}
-                </p>
-              </div>
-            </div>
-            <span className={`text-2xl font-black tabular-nums ${isProfitable ? 'text-success' : 'text-danger'}`}>
-              {isProfitable ? '+' : '-'}${pnlFormatted}
-            </span>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-[#0a0a14]">
+      {/* Card image */}
+      <div className="relative w-full max-w-sm md:max-w-md">
+        {!imgLoaded && (
+          <div className="w-full aspect-square rounded-2xl bg-surface-light/30 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imgSrc}
+          alt={`${trade.asset} ${trade.side} trade card`}
+          className={`w-full rounded-2xl shadow-2xl transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+          onLoad={() => setLoaded(true)}
+        />
+      </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            <DetailBox label="Entry" value={`$${entryFormatted}`} />
-            <DetailBox label="Exit" value={`$${exitFormatted}`} />
-            <DetailBox label="Size" value={`$${sizeFormatted}`} />
-            <DetailBox label="Leverage" value={`${trade.leverage}x`} />
-            <DetailBox label="PnL %" value={`${pnlPctStr}%`} color={isProfitable ? 'text-success' : 'text-danger'} />
-            <DetailBox label="ROI" value={`${roiStr}%`} color={isProfitable ? 'text-success' : 'text-danger'} />
-          </div>
+      {/* Action buttons */}
+      <div className="flex flex-col gap-3 w-full max-w-sm md:max-w-md">
+        {/* Download */}
+        <a
+          href={dlSrc}
+          download={`d0-trade-${trade.asset}-${trade.side}.png`}
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-colors"
+          style={{ background: 'linear-gradient(135deg, #ACAAFF 0%, #8880ff 100%)' }}
+        >
+          <Download size={16} />
+          Download Card
+        </a>
 
-          <div className="mb-5">
-            <div className="flex justify-between text-xs text-text-muted mb-1">
-              <span>Entry ${entryFormatted}</span>
-              <span>Exit ${exitFormatted}</span>
-            </div>
-            <div className="h-2 rounded-full bg-surface-light overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${isProfitable ? 'bg-success' : 'bg-danger'}`}
-                style={{
-                  width: `${Math.min(Math.abs(roi) * 3, 100)}%`,
-                  marginLeft: isProfitable ? '0%' : `${100 - Math.min(Math.abs(roi) * 3, 100)}%`,
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between text-[10px] text-text-muted mb-4">
-            <span>TX: {trade.txSignature || '—'}</span>
-            <span>{dateStr}</span>
-          </div>
-
+        {/* Share row */}
+        <div className="flex gap-3">
           <button
             onClick={handleShare}
-            className="w-full rounded-xl bg-primary/20 py-3 text-sm font-bold text-primary hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-surface-light py-3 text-sm font-semibold text-text hover:bg-surface-light/80 transition-colors border border-border"
           >
-            <Share2 size={16} />
-            Share to X (Twitter)
+            <Share2 size={15} />
+            Share to X
           </button>
-
-          <p className="text-[10px] text-text-muted/50 text-center mt-3">
-            Powered by Donut AI 🍩 — On-chain verified
-          </p>
+          <button
+            onClick={handleCopy}
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-surface-light py-3 text-sm font-semibold text-text hover:bg-surface-light/80 transition-colors border border-border"
+          >
+            {copied ? <Check size={15} className="text-success" /> : <Share2 size={15} />}
+            {copied ? 'Copied!' : 'Copy Link'}
+          </button>
         </div>
       </div>
-    </div>
-  );
-}
 
-function DetailBox({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="rounded-lg bg-surface-light/50 px-3 py-2">
-      <p className="text-[10px] text-text-muted">{label}</p>
-      <p className={`text-sm font-bold tabular-nums ${color || 'text-text'}`}>{value}</p>
+      {/* Back link */}
+      <a href="/" className="text-xs text-text-muted hover:text-primary transition-colors">
+        ← Back to leaderboard
+      </a>
     </div>
   );
 }
