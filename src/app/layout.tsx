@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'd0 Trade Showcase — Powered by Donut AI',
   description: 'Top trades, weekly leaderboard & shareable proof cards from the Donut ecosystem',
+  metadataBase: new URL(process.env.SITE_URL || 'https://d0-trade-showcase.vercel.app'),
   openGraph: {
     title: 'd0 Trade Showcase',
     description: 'Top trades, weekly leaderboard & shareable proof cards from the Donut ecosystem',

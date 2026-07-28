@@ -1,27 +1,22 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
-import { getTrades, getDemoCard } from '@/lib/data';
 
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get('id');
+  const params = request.nextUrl.searchParams;
+  const asset = params.get('asset') || '?';
+  const pnl = parseFloat(params.get('pnl') || '0');
+  const side = params.get('side') || 'long';
+  const entryPrice = parseFloat(params.get('entry') || '0');
+  const exitPrice = parseFloat(params.get('exit') || '0');
+  const leverage = parseInt(params.get('leverage') || '1');
+  const venue = params.get('venue') || 'donut-perps';
+  const roi = parseFloat(params.get('roi') || '0');
+  const size = parseFloat(params.get('size') || '0');
+  const username = params.get('username') || '';
 
-  // Fetch trade data
-  const trades = getTrades(100);
-  const trade = trades.find(t => t.id === id) || getDemoCard();
-
-  if (!trade) {
-    return new ImageResponse(
-      <div style={{ background: '#0a0a0f', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e8e8f0', fontSize: 24 }}>
-        Trade Not Found
-      </div>,
-      { width: 1200, height: 630 }
-    );
-  }
-
-  const isProfitable = trade.pnlUsd >= 0;
-  const roi = trade.roi || trade.pnlPercent * trade.leverage;
+  const isProfitable = pnl >= 0;
 
   return new ImageResponse(
     (
@@ -51,7 +46,6 @@ export async function GET(request: NextRequest) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {/* Asset icon */}
             <div
               style={{
                 width: 64,
@@ -64,25 +58,24 @@ export async function GET(request: NextRequest) {
                 fontSize: 32,
               }}
             >
-              {trade.side === 'long' ? '↗' : '↘'}
+              {side === 'long' ? '↗' : '↘'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 36, fontWeight: 700, color: '#e8e8f0', lineHeight: 1.2 }}>
-                {trade.asset}
+                {asset}
               </span>
               <span style={{ fontSize: 18, color: '#8888a0', marginTop: 2 }}>
-                {trade.username || 'Anonymous'} · {trade.side.toUpperCase()} · {trade.leverage}x
+                {username || 'Trader'} · {side.toUpperCase()} · {leverage}x
               </span>
             </div>
           </div>
-          {/* PnL */}
           <span style={{
             fontSize: 56,
             fontWeight: 900,
             color: isProfitable ? '#00a88b' : '#f85149',
             lineHeight: 1,
           }}>
-            {isProfitable ? '+' : '-'}${Math.abs(trade.pnlUsd).toLocaleString()}
+            {isProfitable ? '+' : '-'}${Math.abs(pnl).toLocaleString()}
           </span>
         </div>
 
@@ -96,32 +89,17 @@ export async function GET(request: NextRequest) {
           background: 'rgba(26,26,36,0.8)',
           border: '1px solid rgba(42,42,58,0.5)',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 14, color: '#8888a0' }}>Entry</span>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#e8e8f0' }}>${trade.entryPrice.toLocaleString()}</span>
-          </div>
-          <div style={{ width: 1, background: '#2a2a3a' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 14, color: '#8888a0' }}>Exit</span>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#e8e8f0' }}>${trade.exitPrice.toLocaleString()}</span>
-          </div>
-          <div style={{ width: 1, background: '#2a2a3a' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 14, color: '#8888a0' }}>ROI</span>
-            <span style={{ fontSize: 28, fontWeight: 700, color: isProfitable ? '#00a88b' : '#f85149' }}>{roi.toFixed(1)}%</span>
-          </div>
-          <div style={{ width: 1, background: '#2a2a3a' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 14, color: '#8888a0' }}>Size</span>
-            <span style={{ fontSize: 28, fontWeight: 700, color: '#e8e8f0' }}>${trade.size.toLocaleString()}</span>
-          </div>
+          <DetailBlock label="Entry" value={`$${entryPrice.toLocaleString()}`} />
+          <DetailBlock label="Exit" value={`$${exitPrice.toLocaleString()}`} />
+          <DetailBlock label="ROI" value={`${roi.toFixed(1)}%`} color={isProfitable ? '#00a88b' : '#f85149'} />
+          <DetailBlock label="Size" value={`$${size.toLocaleString()}`} />
         </div>
 
         {/* PnL bar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#8888a0' }}>
-            <span>Entry ${trade.entryPrice.toLocaleString()}</span>
-            <span>Exit ${trade.exitPrice.toLocaleString()}</span>
+            <span>Entry ${entryPrice.toLocaleString()}</span>
+            <span>Exit ${exitPrice.toLocaleString()}</span>
           </div>
           <div style={{ height: 8, borderRadius: 4, background: '#1a1a24' }}>
             <div style={{
@@ -149,7 +127,7 @@ export async function GET(request: NextRequest) {
             <span style={{ fontSize: 14, color: '#8888a0' }}>Powered by Donut AI 🍩</span>
           </div>
           <div style={{ fontSize: 14, color: '#8888a0' }}>
-            {trade.venue === 'donut-perps' ? 'Donut Perps' : 'HyperLiquid'} · On-chain verified
+            {venue === 'donut-perps' ? 'Donut Perps' : 'HyperLiquid'} · On-chain verified
           </div>
         </div>
 
@@ -166,7 +144,7 @@ export async function GET(request: NextRequest) {
           transform: 'rotate(45deg)',
           opacity: 0.9,
         }}>
-          {trade.side.toUpperCase()}
+          {side.toUpperCase()}
         </div>
       </div>
     ),
@@ -174,5 +152,14 @@ export async function GET(request: NextRequest) {
       width: 1200,
       height: 630,
     }
+  );
+}
+
+function DetailBlock({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 14, color: '#8888a0' }}>{label}</span>
+      <span style={{ fontSize: 28, fontWeight: 700, color: color || '#e8e8f0' }}>{value}</span>
+    </div>
   );
 }
