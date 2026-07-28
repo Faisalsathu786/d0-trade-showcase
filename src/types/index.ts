@@ -1,7 +1,7 @@
 export interface TradeEntry {
   id: string;
   walletAddress: string;
-  username?: string;
+  username?: string | null;
   asset: string;
   side: 'long' | 'short';
   entryPrice: number;
@@ -11,6 +11,7 @@ export interface TradeEntry {
   size: number;
   leverage: number;
   timestamp: string; // ISO
+  timestampISO?: string; // ISO 8601 (same as timestamp, for API compatibility)
   venue: 'donut-perps' | 'hyperliquid' | 'polymarket' | 'spot';
   txSignature: string;
   roi?: number;
@@ -20,29 +21,30 @@ export interface TradeEntry {
 export interface LeaderboardEntry {
   rank: number;
   walletAddress: string;
-  username?: string;
+  username?: string | null;
   totalPnl: number;
-  totalPnlPercent: number;
   tradeCount: number;
   winRate: number;
-  bestTrade: number;
-  period: 'weekly' | 'monthly' | 'alltime';
-  avatar?: string;
+  bestTrade?: {
+    asset: string;
+    pnlUsd: number;
+    side: string;
+    leverage: number;
+  } | null;
+  avgLeverage?: number;
+  avgSize?: number;
 }
 
 export interface WeeklyResult {
-  weekLabel: string; // "Jul 21 - Jul 27"
-  year: number;
-  week: number;
+  weekLabel: string;
+  totalTraders: number;
+  totalVolume: number;
   topTraders: LeaderboardEntry[];
-  totalPayout?: number;
-  topStrategy?: string;
-  generatedAt: string;
 }
 
 export interface TradeCard {
   trade: TradeEntry;
-  cardImage: string; // base64 or URL
+  cardImage: string;
   shareText: string;
   ogImage?: string;
 }

@@ -170,7 +170,7 @@ Powered by @DonutAI 🍩`;
                     <p className="text-[12px] font-mono text-text-muted mt-1">{shorten(top3[0].walletAddress)}</p>
                     <p className="text-2xl font-bold text-primary mt-1">{fmtUsd(top3[0].totalPnl)}</p>
                     <p className="text-[10px] text-text-muted mt-1">
-                      {top3[0].tradeCount} trades · {top3[0].winRate}% WR · Best: {fmtUsd(top3[0].bestTrade)}
+                      {top3[0].tradeCount} trades · {top3[0].winRate}% WR · Best: {fmtUsd(top3[0].bestTrade?.pnlUsd || 0)}
                     </p>
                     <span className="inline-block mt-2 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] text-primary font-medium">
                       🏆 #1 THIS WEEK
@@ -235,7 +235,7 @@ Powered by @DonutAI 🍩`;
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-right text-text-muted hidden md:table-cell">{entry.tradeCount}</td>
-                      <td className="px-4 py-2.5 text-right text-success hidden md:table-cell">{fmtUsd(entry.bestTrade)}</td>
+                      <td className="px-4 py-2.5 text-right text-success hidden md:table-cell">{fmtUsd(entry.bestTrade?.pnlUsd || 0)}</td>
                     </tr>
                   ))}
                 </tbody>

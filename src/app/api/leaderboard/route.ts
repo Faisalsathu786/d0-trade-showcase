@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getWeeklyLeaderboard, getTopTraders } from '@/lib/data';
+import { getAllData } from '@/lib/data';
 
 export async function GET() {
   try {
-    const weekly = getWeeklyLeaderboard();
-    const top = getTopTraders('weekly');
-
+    const data = getAllData();
     return NextResponse.json({
-      weekly,
-      topTraders: top,
-      computedAt: new Date().toISOString(),
+      weekly: data.weekly,
+      topTraders: data.leaderboard,
+      generatedAt: data.generatedAt,
+      source: data.source,
     });
   } catch {
     return NextResponse.json({ weekly: null, topTraders: [], error: 'Failed' }, { status: 200 });

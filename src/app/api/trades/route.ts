@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTrades, getTradesByWallet } from '@/lib/data';
+import { getTrades } from '@/lib/data';
 
 export async function GET(request: NextRequest) {
-  const wallet = request.nextUrl.searchParams.get('wallet');
-  const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
+  const searchParams = request.nextUrl.searchParams;
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10) || 50, 100);
+  const wallet = searchParams.get('wallet');
 
   try {
-    let trades = wallet ? getTradesByWallet(wallet) : getTrades(limit);
-    if (limit) trades = trades.slice(0, limit);
-
-    return NextResponse.json({
-      trades,
-      total: trades.length,
-      computedAt: new Date().toISOString(),
-    });
+    let trades = getTrades(limit);
+    if (wallet) {
+      trades = trades.filter(t => t.walletAddress === wallet).slice(0, limit);
+    }
+    return NextResponse.json({ trades, count: trades.length });
   } catch {
-    return NextResponse.json({ trades: [], total: 0, error: 'Failed' }, { status: 200 });
+    return NextResponse.json({ trades: [], count: 0 });
   }
 }
