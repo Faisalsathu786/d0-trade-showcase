@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate": "node scripts/generate-data.cjs"
+    "generate": "node scripts/generate-data.cjs",
+    "fetch-real": "node scripts/fetch-real-data.cjs"
   },
   "dependencies": {
     "autoprefixer": "^10.5.4",
